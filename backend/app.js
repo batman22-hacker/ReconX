@@ -10,20 +10,37 @@ const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
-/* ================= SECURITY LAYER ================= */
+/* =========================
+   CORS CONFIGURATION
+========================= */
 
-// CORS (restrict in production)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://reconxcyberoperations.netlify.app"
+];
+
 app.use(
   cors({
-    origin: "*", // Replace with frontend URL in production
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow Postman / server calls
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   })
 );
 
-// Secure headers
+/* =========================
+   SECURITY MIDDLEWARE
+========================= */
+
 app.use(helmet());
 
-// Rate limiting (global)
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -33,16 +50,23 @@ app.use(
   })
 );
 
-// Body parser
+/* =========================
+   BODY PARSER
+========================= */
+
 app.use(express.json({ limit: "10kb" }));
 
-/* ================= ROUTES ================= */
+/* =========================
+   ROUTES
+========================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/email", emailRoutes);
 
-/* ================= HEALTH CHECK ================= */
+/* =========================
+   HEALTH CHECK
+========================= */
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -51,7 +75,9 @@ app.get("/", (req, res) => {
   });
 });
 
-/* ================= ERROR HANDLER ================= */
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
 
 app.use(errorMiddleware);
 
