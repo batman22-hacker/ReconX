@@ -1,70 +1,41 @@
-const express = require("express");
-const cors = require("cors");
+require("dotenv").config();
 
-const app = express();
+const app = require("./app");
+const connectDB = require("./db");
 
-/* =========================
-   CORS CONFIGURATION
-========================= */
-
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://reconxcyberoperations.netlify.app"
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow Postman / server-to-server
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-  })
-);
+const PORT = process.env.PORT || 5000;
 
 /* =========================
-   MIDDLEWARE
+   START SERVER
 ========================= */
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const startServer = async () => {
+  try {
+    await connectDB();
+    console.log("✅ Database Connected");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 ReconX running on port ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error("❌ Server startup failed:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 /* =========================
-   ROUTES
+   UNHANDLED ERRORS
 ========================= */
 
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/scan", require("./routes/scanRoutes"));
-app.use("/api/email", require("./routes/emailRoutes"));
-
-/* =========================
-   HEALTH CHECK
-========================= */
-
-app.get("/", (req, res) => {
-  res.json({
-    status: "ReconX Secure Backend Running",
-    timestamp: new Date()
-  });
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err.message);
+  process.exit(1);
 });
 
-/* =========================
-   GLOBAL ERROR HANDLER
-========================= */
-
-app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.message);
-
-  res.status(500).json({
-    success: false,
-    message: err.message || "Internal Server Error"
-  });
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err.message);
+  process.exit(1);
 });
-
-module.exports = app;
