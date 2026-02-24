@@ -1,0 +1,42 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  background-color: #ffffff;
+}
+
+/* ===== ReconX Layout Fix ===== */
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* ===== Terminal Box ===== */
+
+.terminal-box {
+  background-color: #111;
+  color: #00ff00;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px #00ff00;
+  
+  width: 100%;
+  max-width: 100%;
+  
+  overflow-x: auto;   /* Horizontal scroll INSIDE box only */
+}
+
+/* Force text wrapping */
+.terminal-box pre {
+  white-space: pre-wrap;       /* Wrap long lines */
+  word-break: break-all;       /* Break very long URLs */
+  overflow-wrap: break-word;   /* Safe wrapping */
+  
+  font-family: Consolas, monospace;
+  font-size: 14px;
+  margin: 0;
+}
