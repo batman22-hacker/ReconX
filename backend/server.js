@@ -1,16 +1,70 @@
-require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 
-const app = require("./app");
-const connectDB = require("./db");
+const app = express();
 
-const PORT = process.env.PORT || 5000;
+/* =========================
+   CORS CONFIGURATION
+========================= */
 
-const startServer = async () => {
-  await connectDB();
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://reconxcyberoperations.netlify.app"
+];
 
-  app.listen(PORT, () => {
-    console.log(`🚀 ReconX running on port ${PORT}`);
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow Postman / server-to-server
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  })
+);
+
+/* =========================
+   MIDDLEWARE
+========================= */
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* =========================
+   ROUTES
+========================= */
+
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/scan", require("./routes/scanRoutes"));
+app.use("/api/email", require("./routes/emailRoutes"));
+
+/* =========================
+   HEALTH CHECK
+========================= */
+
+app.get("/", (req, res) => {
+  res.json({
+    status: "ReconX Secure Backend Running",
+    timestamp: new Date()
   });
-};
+});
 
-startServer();
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
+
+app.use((err, req, res, next) => {
+  console.error("❌ Error:", err.message);
+
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error"
+  });
+});
+
+module.exports = app;
