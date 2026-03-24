@@ -22,7 +22,6 @@ const calculateScore = (headers) => {
 };
 
 const calculateRisk = (score) => {
-  if (score === null) return null;
   if (score < 40) return "Critical";
   if (score < 60) return "High";
   if (score < 80) return "Medium";
@@ -31,7 +30,7 @@ const calculateRisk = (score) => {
 
 /* ================= WHOIS ================= */
 
-router.post("/whois", authMiddleware, async (req, res, next) => {
+router.post("/whois", authMiddleware, async (req, res) => {
   try {
     let { domain } = req.body;
     if (!domain) return res.status(400).json({ msg: "Domain required" });
@@ -49,13 +48,13 @@ router.post("/whois", authMiddleware, async (req, res, next) => {
 
     res.json(scan);
   } catch (err) {
-    next(err);
+    res.status(500).json({ msg: "WHOIS scan failed" });
   }
 });
 
 /* ================= HEADERS ================= */
 
-router.post("/headers", authMiddleware, async (req, res, next) => {
+router.post("/headers", authMiddleware, async (req, res) => {
   try {
     let { domain } = req.body;
     if (!domain) return res.status(400).json({ msg: "Domain required" });
@@ -92,13 +91,13 @@ router.post("/headers", authMiddleware, async (req, res, next) => {
 
     res.json(scan);
   } catch (err) {
-    next(err);
+    res.status(500).json({ msg: "Header scan failed" });
   }
 });
 
-/* ================= FULL SCAN (ENGINE-BASED) ================= */
+/* ================= FULL SCAN ================= */
 
-router.post("/full-scan", authMiddleware, async (req, res, next) => {
+router.post("/full-scan", authMiddleware, async (req, res) => {
   try {
     let { domain } = req.body;
     if (!domain) return res.status(400).json({ msg: "Domain required" });
@@ -116,21 +115,21 @@ router.post("/full-scan", authMiddleware, async (req, res, next) => {
 
     res.json(scan);
   } catch (err) {
-    next(err);
+    res.status(500).json({ msg: "Full scan failed" });
   }
 });
 
 /* ================= HISTORY ================= */
 
-router.get("/scans", authMiddleware, async (req, res, next) => {
+router.get("/scans", authMiddleware, async (req, res) => {
   try {
     const scans = await Scan.find({ user: req.user.id })
       .sort({ createdAt: -1 })
       .lean();
 
     res.json(scans);
-  } catch (err) {
-    next(err);
+  } catch {
+    res.status(500).json({ msg: "Failed to fetch history" });
   }
 });
 
