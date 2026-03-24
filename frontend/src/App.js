@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API = "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL || "https://reconx-ll7b.onrender.com";
 
 function App() {
   const [mode, setMode] = useState("login");
@@ -12,7 +12,6 @@ function App() {
   const [password, setPassword] = useState("");
 
   const [domain, setDomain] = useState("");
-  const [scanEmail, setScanEmail] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,8 +77,7 @@ function App() {
           password,
         });
 
-        const receivedToken =
-          res.data.accessToken || res.data.token;
+        const receivedToken = res.data.accessToken || res.data.token;
 
         if (!receivedToken) throw new Error("Token not received");
 
@@ -237,7 +235,6 @@ function App() {
 
                 <p><strong>Target:</strong> {scanResult.target}</p>
 
-                {/* WHOIS */}
                 {scanResult.result?.whois && (
                   <>
                     <h4>WHOIS Intelligence</h4>
@@ -266,7 +263,6 @@ function App() {
                   </>
                 )}
 
-                {/* HEADERS */}
                 {scanResult.result?.headers && (
                   <>
                     <h4 style={{ marginTop: "30px" }}>
