@@ -20,6 +20,8 @@ const generateRefreshToken = (user) => {
   );
 };
 
+/* ================= REGISTER (FIXED) ================= */
+
 exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -53,7 +55,12 @@ exports.register = async (req, res) => {
       isVerified: false,
     });
 
-    await sendVerificationEmail(email, verificationToken);
+    /* 🔥 FINAL FIX: EMAIL NON-BLOCKING */
+    sendVerificationEmail(email, verificationToken)
+      .then(() => console.log("Verification email sent"))
+      .catch((err) =>
+        console.log("Email failed but ignored:", err.message)
+      );
 
     return res.status(201).json({
       success: true,
@@ -61,13 +68,15 @@ exports.register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Register Error:", error);
+    console.error("Register Error:", error.message);
     return res.status(500).json({
       success: false,
       message: "Server error",
     });
   }
 };
+
+/* ================= VERIFY EMAIL ================= */
 
 exports.verifyEmail = async (req, res) => {
   try {
@@ -87,6 +96,7 @@ exports.verifyEmail = async (req, res) => {
     await user.save();
 
     return res.redirect(process.env.CLIENT_URL || "http://localhost:3000");
+
   } catch (error) {
     console.error("Verify Email Error:", error);
     return res.status(500).json({
@@ -95,6 +105,8 @@ exports.verifyEmail = async (req, res) => {
     });
   }
 };
+
+/* ================= LOGIN ================= */
 
 exports.login = async (req, res) => {
   try {
@@ -166,6 +178,8 @@ exports.login = async (req, res) => {
   }
 };
 
+/* ================= REFRESH TOKEN ================= */
+
 exports.refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
@@ -209,6 +223,8 @@ exports.refreshToken = async (req, res) => {
     return res.status(403).json({ success: false });
   }
 };
+
+/* ================= LOGOUT ================= */
 
 exports.logout = async (req, res) => {
   try {
