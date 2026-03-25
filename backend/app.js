@@ -13,21 +13,27 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://reconx-eta.vercel.app"
-];
+  process.env.CLIENT_URL,
+  "https://reconx-eta.vercel.app" // 🔥 IMPORTANT ADD THIS
+].filter(Boolean);
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
 
-// Preflight fix
-app.options(/.*/, cors({
-  origin: allowedOrigins,
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(null, false); // ❗ ERROR THROW MAT KARO
+  },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
+
+/* ✅ MOST IMPORTANT LINE */
+app.options("*", cors(corsOptions));
 
 app.use(helmet());
 
