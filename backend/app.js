@@ -33,7 +33,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 /* ✅ MOST IMPORTANT LINE */
-app.options("*", cors(corsOptions));
+app.options("/*", cors(corsOptions));
 
 app.use(helmet());
 
