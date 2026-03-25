@@ -52,10 +52,10 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       verificationToken,
-      isVerified: false,
+      isVerified: true, // ✅ BYPASS ENABLED
     });
 
-    /* 🔥 FINAL FIX: EMAIL NON-BLOCKING */
+    // ✅ NON-BLOCKING EMAIL (no crash)
     sendVerificationEmail(email, verificationToken)
       .then(() => console.log("Verification email sent"))
       .catch((err) =>
@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Registered successfully. Please verify your email.",
+      message: "Registered successfully. Please login.",
     });
 
   } catch (error) {
@@ -121,12 +121,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    if (!user.isVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify your email before logging in.",
-      });
-    }
+    // ❌ VERIFICATION CHECK REMOVED (BYPASS)
 
     const isMatch = await bcrypt.compare(password, user.password);
 
