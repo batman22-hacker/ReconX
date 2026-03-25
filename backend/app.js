@@ -14,7 +14,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.CLIENT_URL,
-  "https://reconx-eta.vercel.app" // 🔥 IMPORTANT ADD THIS
+  "https://reconx-eta.vercel.app"
 ].filter(Boolean);
 
 const corsOptions = {
@@ -25,15 +25,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    return callback(null, false); // ❗ ERROR THROW MAT KARO
+    return callback(null, false); // ❗ no error throw
   },
   credentials: true,
 };
 
-app.use(cors(corsOptions));
-
-/* ✅ MOST IMPORTANT LINE */
-app.options("/*", cors(corsOptions));
+app.use(cors(corsOptions)); // ✅ THIS HANDLES PREFLIGHT AUTOMATICALLY
 
 app.use(helmet());
 
