@@ -35,6 +35,9 @@ app.use(
   })
 );
 
+// ✅ FINAL FIX (IMPORTANT)
+app.options(/.*/, cors());
+
 app.use(helmet());
 
 app.use(
