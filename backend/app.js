@@ -13,30 +13,21 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  process.env.CLIENT_URL
-].filter(Boolean);
+  "https://reconx-eta.vercel.app"
+];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      if (/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:3000$/.test(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
-    },
+    origin: allowedOrigins,
     credentials: true,
   })
 );
 
-// ✅ FINAL FIX (IMPORTANT)
-app.options(/.*/, cors());
+// Preflight fix
+app.options(/.*/, cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
 app.use(helmet());
 
