@@ -22,6 +22,14 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    /* ===== OTP SYSTEM (🔥 ADDED ONLY THIS) ===== */
+    otp: String,
+    otpExpiry: Date,
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+
     /* ===== PASSWORD RESET ===== */
     passwordResetToken: String,
     passwordResetExpires: Date,

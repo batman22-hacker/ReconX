@@ -1,26 +1,25 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
 const User = require("../models/user.model");
-const sendVerificationEmail = require("../utils/email");
+const sendEmail = require("../utils/email");
 
-const generateAccessToken = (user) => {
-  return jwt.sign(
+/* ================= TOKEN GENERATION ================= */
+
+const generateAccessToken = (user) =>
+  jwt.sign(
     { id: user._id, role: user.role },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
   );
-};
 
-const generateRefreshToken = (user) => {
-  return jwt.sign(
+const generateRefreshToken = (user) =>
+  jwt.sign(
     { id: user._id },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d" }
   );
-};
 
-/* ================= REGISTER (FIXED) ================= */
+/* ================= REGISTER ================= */
 
 exports.register = async (req, res) => {
   try {
@@ -45,30 +44,33 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     await User.create({
       username,
       email,
       password: hashedPassword,
-      verificationToken,
-      isVerified: true, // ✅ BYPASS ENABLED
+      otp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      isVerified: false,
     });
 
-    // ✅ NON-BLOCKING EMAIL (no crash)
-    sendVerificationEmail(email, verificationToken)
-      .then(() => console.log("Verification email sent"))
-      .catch((err) =>
-        console.log("Email failed but ignored:", err.message)
-      );
+    // 🔥 non-blocking email
+    sendEmail(
+      email,
+      "ReconX OTP Verification",
+      `<h2>Your OTP: ${otp}</h2><p>Valid for 5 minutes</p>`
+    ).catch(() => {});
 
     return res.status(201).json({
       success: true,
-      message: "Registered successfully. Please login.",
+      message: "OTP sent to your email",
     });
 
   } catch (error) {
     console.error("Register Error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -76,29 +78,60 @@ exports.register = async (req, res) => {
   }
 };
 
-/* ================= VERIFY EMAIL ================= */
+/* ================= VERIFY OTP ================= */
 
-exports.verifyEmail = async (req, res) => {
+exports.verifyOtp = async (req, res) => {
   try {
-    const { token } = req.params;
+    const { email, otp } = req.body;
 
-    const user = await User.findOne({ verificationToken: token });
+    const user = await User.findOne({ email });
 
     if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.otpAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many attempts. Try later.",
+      });
+    }
+
+    if (user.otp !== otp || user.otpExpiry < Date.now()) {
+      user.otpAttempts += 1;
+      await user.save();
+
       return res.status(400).json({
         success: false,
-        message: "Invalid verification token",
+        message: "Invalid or expired OTP",
       });
     }
 
     user.isVerified = true;
-    user.verificationToken = null;
+    user.otp = null;
+    user.otpExpiry = null;
+    user.otpAttempts = 0;
+
     await user.save();
 
-    return res.redirect(process.env.CLIENT_URL || "http://localhost:3000");
+    // 🎉 welcome email
+    sendEmail(
+      email,
+      "Welcome to ReconX 🚀",
+      `<h2>Welcome ${user.username}</h2><p>Your account is now secured.</p>`
+    ).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: "Account verified successfully",
+    });
 
   } catch (error) {
-    console.error("Verify Email Error:", error);
+    console.error("OTP Error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -121,7 +154,13 @@ exports.login = async (req, res) => {
       });
     }
 
-    // ❌ VERIFICATION CHECK REMOVED (BYPASS)
+    // 🔐 verification required
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify OTP first",
+      });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -165,7 +204,8 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error("Login Error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -184,6 +224,7 @@ exports.refreshToken = async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
     const user = await User.findById(decoded.id);
 
     if (!user || user.refreshToken !== token) {
@@ -208,13 +249,14 @@ exports.refreshToken = async (req, res) => {
       sameSite: "strict",
     });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       token: newAccessToken,
     });
 
   } catch (error) {
     console.error("Refresh Token Error:", error);
+
     return res.status(403).json({ success: false });
   }
 };
@@ -227,6 +269,7 @@ exports.logout = async (req, res) => {
 
     if (token) {
       const user = await User.findOne({ refreshToken: token });
+
       if (user) {
         user.refreshToken = null;
         await user.save();
@@ -236,13 +279,66 @@ exports.logout = async (req, res) => {
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       message: "Logged out successfully",
     });
 
   } catch (error) {
     console.error("Logout Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+/* ================= RESEND OTP ================= */
+
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Already verified",
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+    user.otpAttempts = 0;
+
+    await user.save();
+
+    // 🔥 resend email
+    sendEmail(
+      email,
+      "ReconX OTP Resend",
+      `<h2>Your new OTP: ${otp}</h2><p>Valid for 5 minutes</p>`
+    ).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP resent successfully",
+    });
+
+  } catch (error) {
+    console.error("Resend OTP Error:", error.message);
+
     return res.status(500).json({
       success: false,
       message: "Server error",

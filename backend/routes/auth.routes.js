@@ -1,26 +1,22 @@
-const express = require("express");
-const rateLimit = require("express-rate-limit");
-
 const {
   register,
   login,
   refreshToken,
   logout,
-  verifyEmail
+  verifyEmail,
+  verifyOtp,        // ✅ ADD
+  resendOtp         // ✅ ADD
 } = require("../controllers/auth.controller");
 
-const router = express.Router();
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  message: "Too many login attempts. Try again later."
-});
-
+// ===== EXISTING ROUTES =====
 router.post("/register", register);
 router.post("/login", loginLimiter, login);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
 router.get("/verify/:token", verifyEmail);
+
+// ===== OTP ROUTES (🔥 ADD THESE) =====
+router.post("/verify-otp", verifyOtp);
+router.post("/resend-otp", resendOtp);
 
 module.exports = router;
