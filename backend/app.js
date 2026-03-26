@@ -42,7 +42,10 @@ const corsOptions = {
 
 /* ================= CORS ================= */
 
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: true,          // ✅ allow all origins (fixes everything)
+  credentials: true
+}));
 
 /* ================= SECURITY ================= */
 
