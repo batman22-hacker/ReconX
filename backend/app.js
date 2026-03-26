@@ -21,13 +21,19 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: function (origin, callback) {
+    // allow requests without origin (Postman, mobile apps)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    // allow localhost + ALL vercel deployments
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.includes("vercel.app")
+    ) {
       return callback(null, true);
     }
 
-    return callback(null, false);
+    // ❗ IMPORTANT FIX (was false before)
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -36,8 +42,7 @@ const corsOptions = {
 
 /* ================= CORS ================= */
 
-app.use(cors(corsOptions)); 
-// ❌ REMOVED app.options("*", ...) → causing crash
+app.use(cors(corsOptions));
 
 /* ================= SECURITY ================= */
 
