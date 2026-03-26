@@ -30,19 +30,20 @@ const corsOptions = {
     return callback(null, false);
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ IMPORTANT
-  allowedHeaders: ["Content-Type", "Authorization"],   // ✅ IMPORTANT
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-/* 🔥 VERY IMPORTANT (FIXES NETWORK ERROR) */
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ HANDLE PREFLIGHT
+/* ================= CORS ================= */
+
+app.use(cors(corsOptions)); 
+// ❌ REMOVED app.options("*", ...) → causing crash
 
 /* ================= SECURITY ================= */
 
 app.use(
   helmet({
-    crossOriginResourcePolicy: false, // ✅ prevents blocking frontend
+    crossOriginResourcePolicy: false,
   })
 );
 
