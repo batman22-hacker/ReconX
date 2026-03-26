@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API = import.meta.env.VITE_API_URL;
+// ✅ FIXED API (NO ENV BUG)
+const API = "https://reconx-backend.onrender.com/api";
 
 function App() {
   const [mode, setMode] = useState("login");
@@ -113,6 +114,7 @@ function App() {
           password,
         });
 
+        // ✅ THIS TRIGGERS OTP SCREEN
         setShowOtp(true);
         setError("OTP sent to your email");
       }
@@ -274,7 +276,6 @@ function App() {
             {scanResult && (
               <div className="result-box">
                 <h3>Recon Intelligence Report</h3>
-
                 <p><strong>Target:</strong> {scanResult.target}</p>
               </div>
             )}
