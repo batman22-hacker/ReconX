@@ -11,41 +11,21 @@ const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
-/* ================= CORS CONFIG ================= */
+/* ================= CORS (FINAL FIX) ================= */
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  process.env.CLIENT_URL,
-  "https://reconx-eta.vercel.app"
-].filter(Boolean);
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // allow requests without origin (Postman, mobile apps)
-    if (!origin) return callback(null, true);
-
-    // allow localhost + ALL vercel deployments
-    if (
-      allowedOrigins.includes(origin) ||
-      origin.includes("vercel.app")
-    ) {
-      return callback(null, true);
-    }
-
-    // ❗ IMPORTANT FIX (was false before)
-    return callback(new Error("Not allowed by CORS"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-/* ================= CORS ================= */
-
+// 🔥 Simple + guaranteed working
 app.use(cors({
-  origin: true,          // ✅ allow all origins (fixes everything)
+  origin: true, // allows all origins (handles Vercel automatically)
   credentials: true
 }));
+
+// 🔥 Extra safety (ensures headers ALWAYS sent)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  next();
+});
 
 /* ================= SECURITY ================= */
 
