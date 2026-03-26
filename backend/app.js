@@ -11,6 +11,8 @@ const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
+/* ================= CORS CONFIG ================= */
+
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.CLIENT_URL,
@@ -25,38 +27,56 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    return callback(null, false); // ❗ no error throw
+    return callback(null, false);
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // ✅ IMPORTANT
+  allowedHeaders: ["Content-Type", "Authorization"],   // ✅ IMPORTANT
 };
 
-app.use(cors(corsOptions)); // ✅ THIS HANDLES PREFLIGHT AUTOMATICALLY
+/* 🔥 VERY IMPORTANT (FIXES NETWORK ERROR) */
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // ✅ HANDLE PREFLIGHT
 
-app.use(helmet());
+/* ================= SECURITY ================= */
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false, // ✅ prevents blocking frontend
+  })
+);
 
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
   })
 );
 
+/* ================= MIDDLEWARE ================= */
+
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
+
+/* ================= ROUTES ================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/email", emailRoutes);
 
+/* ================= HEALTH CHECK ================= */
+
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "ReconX Secure Backend Running",
-    environment: "local",
+    environment: process.env.NODE_ENV || "development",
     timestamp: new Date(),
   });
 });
+
+/* ================= ERROR HANDLER ================= */
 
 app.use(errorMiddleware);
 
