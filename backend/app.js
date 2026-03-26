@@ -11,21 +11,16 @@ const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
-/* ================= CORS (FINAL FIX) ================= */
+/* ================= CORS ================= */
 
-// 🔥 Simple + guaranteed working
 app.use(cors({
-  origin: true, // allows all origins (handles Vercel automatically)
+  origin: [
+    "http://localhost:3000",
+    "https://reconx-eta.vercel.app",
+    "https://reconx-git-main-mohammed-ajmal-khans-projects.vercel.app"
+  ],
   credentials: true
 }));
-
-// 🔥 Extra safety (ensures headers ALWAYS sent)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  next();
-});
 
 /* ================= SECURITY ================= */
 
