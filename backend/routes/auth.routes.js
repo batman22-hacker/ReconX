@@ -1,5 +1,5 @@
 const express = require("express");
-const router = express.Router(); // ✅ FIXED (this was missing)
+const router = express.Router();
 
 const rateLimit = require("express-rate-limit");
 
@@ -8,7 +8,6 @@ const {
   login,
   refreshToken,
   logout,
-  verifyEmail,
   verifyOtp,
   resendOtp,
 } = require("../controllers/auth.controller");
@@ -27,13 +26,12 @@ router.post("/register", register);
 router.post("/login", loginLimiter, login);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
-router.get("/verify/:token", verifyEmail);
 
-/* ================= OTP ROUTES ================= */
+/* ❌ REMOVED verifyEmail (causing crash) */
+
+/* ================= OTP ================= */
 
 router.post("/verify-otp", verifyOtp);
 router.post("/resend-otp", resendOtp);
-
-/* ================= EXPORT ================= */
 
 module.exports = router;
