@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API = process.env.REACT_APP_API_URL || "https://reconx-ll7b.onrender.com";
+const API = import.meta.env.VITE_API_URL;
 
 function App() {
   const [mode, setMode] = useState("login");
@@ -10,6 +10,8 @@ function App() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [showOtp, setShowOtp] = useState(false);
 
   const [domain, setDomain] = useState("");
 
@@ -62,6 +64,27 @@ function App() {
     }, 500);
   };
 
+  /* ================= OTP VERIFY ================= */
+
+  const verifyOtp = async (otp) => {
+    try {
+      const res = await axios.post(`${API}/auth/verify-otp`, {
+        email,
+        otp,
+      });
+
+      if (res.data.success) {
+        alert("✅ Verified! Now login.");
+        setShowOtp(false);
+        setMode("login");
+      } else {
+        setError(res.data.message);
+      }
+    } catch (err) {
+      setError("OTP verification failed");
+    }
+  };
+
   /* ================= AUTH ================= */
 
   const handleAuth = async () => {
@@ -72,7 +95,7 @@ function App() {
       setError("");
 
       if (mode === "login") {
-        const res = await axios.post(`${API}/api/auth/login`, {
+        const res = await axios.post(`${API}/auth/login`, {
           username,
           password,
         });
@@ -84,14 +107,14 @@ function App() {
         localStorage.setItem("token", receivedToken);
         setToken(receivedToken);
       } else {
-        await axios.post(`${API}/api/auth/register`, {
+        await axios.post(`${API}/auth/register`, {
           username,
           email,
           password,
         });
 
-        setMode("login");
-        setError("Registration successful. Please login.");
+        setShowOtp(true);
+        setError("OTP sent to your email");
       }
     } catch (err) {
       setError(
@@ -124,7 +147,7 @@ function App() {
       simulateScan("domain");
 
       const res = await axios.post(
-        `${API}/api/scan/full-scan`,
+        `${API}/scan/full-scan`,
         { domain },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -155,54 +178,73 @@ function App() {
 
         {!isLoggedIn ? (
           <div className="card auth-card">
-            <h2>{mode === "login" ? "Login" : "Register"}</h2>
 
-            <input
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+            {showOtp ? (
+              <>
+                <h2>Verify OTP</h2>
 
-            {mode === "register" && (
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+                <input
+                  placeholder="Enter Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+
+                <input
+                  placeholder="Enter OTP"
+                  onChange={(e) => verifyOtp(e.target.value)}
+                />
+
+                {error && <p className="error">{error}</p>}
+              </>
+            ) : (
+              <>
+                <h2>{mode === "login" ? "Login" : "Register"}</h2>
+
+                <input
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+
+                {mode === "register" && (
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                )}
+
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <button onClick={handleAuth} disabled={loading}>
+                  {loading
+                    ? "Processing..."
+                    : mode === "login"
+                    ? "Login"
+                    : "Register"}
+                </button>
+
+                {error && <p className="error">{error}</p>}
+
+                <p
+                  style={{ marginTop: "15px", cursor: "pointer" }}
+                  onClick={() =>
+                    setMode(mode === "login" ? "register" : "login")
+                  }
+                >
+                  {mode === "login"
+                    ? "No account? Register"
+                    : "Already have account? Login"}
+                </p>
+              </>
             )}
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-            <button
-              style={{ marginTop: "20px", width: "100%" }}
-              onClick={handleAuth}
-              disabled={loading}
-            >
-              {loading
-                ? "Processing..."
-                : mode === "login"
-                ? "Login"
-                : "Register"}
-            </button>
-
-            {error && <p className="error">{error}</p>}
-
-            <p
-              style={{ marginTop: "15px", cursor: "pointer" }}
-              onClick={() =>
-                setMode(mode === "login" ? "register" : "login")
-              }
-            >
-              {mode === "login"
-                ? "No account? Register"
-                : "Already have account? Login"}
-            </p>
           </div>
         ) : (
           <>
@@ -234,55 +276,6 @@ function App() {
                 <h3>Recon Intelligence Report</h3>
 
                 <p><strong>Target:</strong> {scanResult.target}</p>
-
-                {scanResult.result?.whois && (
-                  <>
-                    <h4>WHOIS Intelligence</h4>
-                    <div className="whois-grid">
-                      <div>
-                        <strong>Registrar</strong>
-                        <p>{scanResult.result.whois.registrar}</p>
-                      </div>
-                      <div>
-                        <strong>Created</strong>
-                        <p>{scanResult.result.whois.creationDate}</p>
-                      </div>
-                      <div>
-                        <strong>Expires</strong>
-                        <p>{scanResult.result.whois.registrarRegistrationExpirationDate}</p>
-                      </div>
-                      <div>
-                        <strong>Organization</strong>
-                        <p>{scanResult.result.whois.registrantOrganization}</p>
-                      </div>
-                      <div>
-                        <strong>Country</strong>
-                        <p>{scanResult.result.whois.registrantCountry}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {scanResult.result?.headers && (
-                  <>
-                    <h4 style={{ marginTop: "30px" }}>
-                      Security Headers Analysis
-                    </h4>
-
-                    <div className="headers-grid">
-                      {Object.entries(scanResult.result.headers).map(
-                        ([key, value]) => (
-                          <div key={key}>
-                            <strong>{key}</strong>
-                            <p className={value ? "secure" : "insecure"}>
-                              {value ? "Present" : "Missing"}
-                            </p>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </>
-                )}
               </div>
             )}
           </>
