@@ -15,12 +15,9 @@ process.on("uncaughtException", (err) => {
 
 const startServer = async () => {
   try {
-    console.log("⏳ Connecting to MongoDB...");
+    console.log("⏳ Starting server...");
 
-    await connectDB(); // ✅ waits for DB
-    console.log("✅ Database Connected");
-
-    // ✅ FIXED (REMOVED "0.0.0.0")
+    // ✅ START SERVER FIRST (IMPORTANT FIX)
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(
@@ -30,7 +27,16 @@ const startServer = async () => {
       );
     });
 
-    // Handle async errors (promises)
+    // ✅ CONNECT DB AFTER SERVER START (NON-BLOCKING)
+    connectDB()
+      .then(() => {
+        console.log("✅ Database Connected");
+      })
+      .catch((err) => {
+        console.error("❌ DB Connection Failed:", err.message);
+      });
+
+    // Handle async errors
     process.on("unhandledRejection", (err) => {
       console.error("❌ Unhandled Rejection:", err.message);
       server.close(() => {
