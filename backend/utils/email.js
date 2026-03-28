@@ -1,26 +1,17 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (to, subject, text) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      family: 4, // 🔥 FORCE IPv4 (THIS FIXES YOUR ERROR)
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    const info = await transporter.sendMail({
-      from: `"ReconX Security" <${process.env.EMAIL_USER}>`,
+    const response = await resend.emails.send({
+      from: "onboarding@resend.dev", // free domain
       to,
       subject,
-      text,
+      html: `<p>${text}</p>`,
     });
 
-    console.log("✅ Email sent:", info.messageId);
+    console.log("✅ Email sent:", response);
   } catch (error) {
     console.error("❌ Email Error:", error.message);
     throw error;
