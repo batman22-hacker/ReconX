@@ -2,9 +2,26 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true, select: false },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
 
     role: {
       type: String,
@@ -22,9 +39,15 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    /* ===== OTP SYSTEM (🔥 ADDED ONLY THIS) ===== */
-    otp: String,
-    otpExpiry: Date,
+    /* ===== OTP SYSTEM (✅ FIXED) ===== */
+    otp: {
+      type: String,
+    },
+
+    otpExpires: {   // ✅ FIXED NAME
+      type: Date,
+    },
+
     otpAttempts: {
       type: Number,
       default: 0,
