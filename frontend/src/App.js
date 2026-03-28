@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-// ✅ FIXED API (NO ENV BUG)
-const API = "https://reconx-backend.onrender.com/api";
+// ✅ FINAL FIXED API (WORKING BACKEND)
+const API = "https://reconx-ll7b.onrender.com/api";
 
 function App() {
   const [mode, setMode] = useState("login");
@@ -114,7 +114,6 @@ function App() {
           password,
         });
 
-        // ✅ THIS TRIGGERS OTP SCREEN
         setShowOtp(true);
         setError("OTP sent to your email");
       }
