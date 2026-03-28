@@ -13,14 +13,16 @@ const app = express();
 
 /* ================= CORS ================= */
 
-app.use(cors({
+const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://reconx-eta.vercel.app",
     "https://reconx-git-main-mohammed-ajmal-khans-projects.vercel.app"
   ],
-  credentials: true
-}));
+  credentials: true,
+};
+
+app.use(cors(corsOptions)); // ✅ handles preflight automatically
 
 /* ================= SECURITY ================= */
 
