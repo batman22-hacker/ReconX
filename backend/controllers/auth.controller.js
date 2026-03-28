@@ -10,28 +10,25 @@ exports.register = async (req, res) => {
     const { username, email, password } = req.body;
 
     /* ===== Validation ===== */
-
     if (!username || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
 
     /* ===== Check Existing User ===== */
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
     /* ===== Hash Password ===== */
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     /* ===== Generate OTP ===== */
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    /* ===== Create User ===== */
+    console.log("📲 OTP (DEV MODE):", otp); // 🔥 IMPORTANT
 
+    /* ===== Create User ===== */
     const user = await User.create({
       username,
       email,
@@ -41,21 +38,31 @@ exports.register = async (req, res) => {
       isVerified: false,
     });
 
-    /* ===== Send Email ===== */
+    /* ===== OPTIONAL EMAIL (NON-BLOCKING) ===== */
+    try {
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        await sendEmail(
+          email,
+          "ReconX OTP Verification",
+          `Your OTP is: ${otp}`
+        );
+      }
+    } catch (err) {
+      console.error("⚠️ Email failed but continuing:", err.message);
+    }
 
-    await sendEmail(
-      email,
-      "ReconX OTP Verification",
-      `Your OTP is: ${otp}`
-    );
-
-    res.status(201).json({
-      message: "User registered. OTP sent to email.",
+    /* ===== RESPONSE ===== */
+    return res.status(201).json({
+      success: true,
+      message: "User registered. OTP generated.",
     });
 
   } catch (error) {
-    console.error("Register Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Register Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -66,21 +73,29 @@ exports.verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
 
     if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP required" });
+      return res.status(400).json({
+        message: "Email and OTP required",
+      });
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
     if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
     }
 
     if (user.otpExpires < Date.now()) {
-      return res.status(400).json({ message: "OTP expired" });
+      return res.status(400).json({
+        message: "OTP expired",
+      });
     }
 
     user.isVerified = true;
@@ -89,13 +104,17 @@ exports.verifyOtp = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "OTP verified successfully",
     });
 
   } catch (error) {
-    console.error("Verify OTP Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Verify OTP Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -108,29 +127,44 @@ exports.resendOtp = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    console.log("📲 RESENT OTP:", otp);
 
     user.otp = otp;
     user.otpExpires = Date.now() + 5 * 60 * 1000;
 
     await user.save();
 
-    await sendEmail(
-      email,
-      "ReconX OTP",
-      `Your OTP is: ${otp}`
-    );
+    /* OPTIONAL EMAIL */
+    try {
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        await sendEmail(
+          email,
+          "ReconX OTP",
+          `Your OTP is: ${otp}`
+        );
+      }
+    } catch (err) {
+      console.error("⚠️ Email resend failed:", err.message);
+    }
 
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "OTP resent successfully",
     });
 
   } catch (error) {
-    console.error("Resend OTP Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Resend OTP Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -140,29 +174,27 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    /* ===== Check User ===== */
-
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    /* ===== Check Verified ===== */
-
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: "Please verify your email first",
+      return res.status(400).json({
+        message: "Invalid credentials",
       });
     }
 
-    /* ===== Check Password ===== */
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: "Please verify OTP first",
+      });
     }
 
-    /* ===== Generate Token ===== */
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid credentials",
+      });
+    }
 
     const token = jwt.sign(
       { id: user._id },
@@ -170,21 +202,25 @@ exports.login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
+      success: true,
       message: "Login successful",
       token,
     });
 
   } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Login Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
 /* ================= REFRESH TOKEN ================= */
 
 exports.refreshToken = (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     message: "Refresh token endpoint working",
   });
 };
@@ -192,7 +228,7 @@ exports.refreshToken = (req, res) => {
 /* ================= LOGOUT ================= */
 
 exports.logout = (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     message: "Logged out successfully",
   });
 };
