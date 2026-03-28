@@ -20,7 +20,8 @@ const startServer = async () => {
     await connectDB(); // ✅ waits for DB
     console.log("✅ Database Connected");
 
-    const server = app.listen(PORT, "0.0.0.0", () => {
+    // ✅ FIXED (REMOVED "0.0.0.0")
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(
         `🌐 BASE_URL: ${
