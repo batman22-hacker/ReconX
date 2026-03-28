@@ -1,55 +1,49 @@
 import { useState } from "react";
-import OtpInput from "../components/OtpInput";
-import OtpTimer from "../components/OtpTimer";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axios from "axios";
 
 const VerifyOtp = () => {
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
 
-  const handleVerify = async (otp) => {
+  const handleVerify = async (e) => {
+    e.preventDefault();
+
     try {
-      const res = await fetch(`${API_URL}/auth/verify-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, otp }),
-      });
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/verify-otp`,
+        { email, otp }
+      );
 
-      const data = await res.json();
-
-      if (data.success) {
-        alert("✅ Verified successfully");
-      } else {
-        alert(data.message);
-      }
+      alert(res.data.message);
     } catch (err) {
-      alert("❌ Server error");
       console.error(err);
+      alert(err.response?.data?.message || "Error");
     }
   };
 
   return (
-    <div style={{ padding: "40px", textAlign: "center" }}>
+    <form onSubmit={handleVerify}>
       <h2>Verify OTP</h2>
 
       <input
         type="email"
-        placeholder="Enter your email"
+        placeholder="Enter Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        style={{
-          padding: "10px",
-          marginBottom: "20px",
-          width: "250px",
-        }}
+        required
       />
 
-      <OtpInput onSubmit={handleVerify} />
+      {/* ✅ FIXED FIELD */}
+      <input
+        type="text"
+        placeholder="Enter OTP"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value)}
+        required
+      />
 
-      <OtpTimer email={email} />
-    </div>
+      <button type="submit">Verify</button>
+    </form>
   );
 };
 
