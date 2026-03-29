@@ -13,13 +13,20 @@ const VerifyOtp = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
 
+    if (!email || !otp) {
+      return setError("Email and OTP required");
+    }
+
     setLoading(true);
     setError("");
 
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/verify-otp`,
-        { email, otp }
+        {
+          email,
+          otp: String(otp).trim(), // 🔥 CRITICAL FIX
+        }
       );
 
       /* ✅ SUCCESS */
@@ -31,14 +38,14 @@ const VerifyOtp = () => {
       }
 
     } catch (err) {
-      console.error(err);
+      console.error("Verify OTP Error:", err);
 
-      /* 🔥 FIX: Proper error handling */
-      if (err.response && err.response.data) {
+      if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError("Server error");
+        setError("Something went wrong. Try again.");
       }
+
     } finally {
       setLoading(false);
     }
@@ -53,7 +60,7 @@ const VerifyOtp = () => {
           type="email"
           placeholder="Enter email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value.trim())}
           required
         />
 
@@ -61,7 +68,10 @@ const VerifyOtp = () => {
           type="text"
           placeholder="Enter OTP"
           value={otp}
-          onChange={(e) => setOtp(e.target.value)}
+          onChange={(e) =>
+            setOtp(e.target.value.replace(/\D/g, "")) // 🔥 only numbers
+          }
+          maxLength={6}
           required
         />
 
