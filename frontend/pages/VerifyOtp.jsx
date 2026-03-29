@@ -1,9 +1,11 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const VerifyOtp = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const navigate = useNavigate();
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -15,9 +17,13 @@ const VerifyOtp = () => {
       );
 
       alert(res.data.message);
+
+      // ✅ SUCCESS → REDIRECT
+      navigate("/login");
+
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Error");
+      alert(err.response?.data?.message || "OTP verification failed");
     }
   };
 
@@ -33,7 +39,6 @@ const VerifyOtp = () => {
         required
       />
 
-      {/* ✅ FIXED FIELD */}
       <input
         type="text"
         placeholder="Enter OTP"
