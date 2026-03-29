@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 
 /* ================= CRITICAL ERROR HANDLERS ================= */
 
-// Handle sync errors
+// Sync errors
 process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught Exception:", err.message);
   process.exit(1);
@@ -17,7 +17,7 @@ const startServer = async () => {
   try {
     console.log("⏳ Starting server...");
 
-    // ✅ START SERVER FIRST (IMPORTANT FIX)
+    /* ✅ START SERVER FIRST */
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(
@@ -27,7 +27,7 @@ const startServer = async () => {
       );
     });
 
-    // ✅ CONNECT DB AFTER SERVER START (NON-BLOCKING)
+    /* ✅ CONNECT DB (NON-BLOCKING) */
     connectDB()
       .then(() => {
         console.log("✅ Database Connected");
@@ -36,12 +36,10 @@ const startServer = async () => {
         console.error("❌ DB Connection Failed:", err.message);
       });
 
-    // Handle async errors
+    /* Async errors */
     process.on("unhandledRejection", (err) => {
       console.error("❌ Unhandled Rejection:", err.message);
-      server.close(() => {
-        process.exit(1);
-      });
+      server.close(() => process.exit(1));
     });
 
   } catch (error) {

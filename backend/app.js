@@ -11,18 +11,21 @@ const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
+/* ================= 🔥 TRUST PROXY (CRITICAL FIX) ================= */
+app.set("trust proxy", 1);
+
 /* ================= CORS ================= */
 
 const corsOptions = {
   origin: [
     "http://localhost:3000",
     "https://reconx-eta.vercel.app",
-    "https://reconx-git-main-mohammed-ajmal-khans-projects.vercel.app"
+    "https://reconx-git-main-mohammed-ajmal-khans-projects.vercel.app",
   ],
   credentials: true,
 };
 
-app.use(cors(corsOptions)); // ✅ handles preflight automatically
+app.use(cors(corsOptions));
 
 /* ================= SECURITY ================= */
 
@@ -31,6 +34,8 @@ app.use(
     crossOriginResourcePolicy: false,
   })
 );
+
+/* ================= RATE LIMIT ================= */
 
 app.use(
   rateLimit({
