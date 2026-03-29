@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-// ✅ FINAL FIXED API (WORKING BACKEND)
+// ✅ API FIXED (unchanged)
 const API = "https://reconx-ll7b.onrender.com/api";
 
 function App() {
@@ -13,6 +13,9 @@ function App() {
   const [password, setPassword] = useState("");
 
   const [showOtp, setShowOtp] = useState(false);
+
+  // ✅ OTP FIX STATE
+  const [otpInput, setOtpInput] = useState("");
 
   const [domain, setDomain] = useState("");
 
@@ -68,6 +71,8 @@ function App() {
   /* ================= OTP VERIFY ================= */
 
   const verifyOtp = async (otp) => {
+    if (!otp) return setError("Enter OTP");
+
     try {
       const res = await axios.post(`${API}/auth/verify-otp`, {
         email,
@@ -78,6 +83,7 @@ function App() {
         alert("✅ Verified! Now login.");
         setShowOtp(false);
         setMode("login");
+        setOtpInput("");
       } else {
         setError(res.data.message);
       }
@@ -190,10 +196,17 @@ function App() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
 
+                {/* ✅ FIXED INPUT */}
                 <input
                   placeholder="Enter OTP"
-                  onChange={(e) => verifyOtp(e.target.value)}
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value)}
                 />
+
+                {/* ✅ FIXED BUTTON */}
+                <button onClick={() => verifyOtp(otpInput)}>
+                  Verify OTP
+                </button>
 
                 {error && <p className="error">{error}</p>}
               </>
