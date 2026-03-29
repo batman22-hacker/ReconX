@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
+      minlength: 3,
+      maxlength: 30,
     },
 
     email: {
@@ -15,12 +17,14 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"],
     },
 
     password: {
       type: String,
       required: true,
       select: false,
+      minlength: 6,
     },
 
     role: {
@@ -35,7 +39,7 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    /* ================= EMAIL / OTP VERIFICATION ================= */
+    /* ================= EMAIL / OTP ================= */
     verificationToken: {
       type: String,
       default: null,
@@ -46,7 +50,6 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    /* ================= OTP SYSTEM ================= */
     otp: {
       type: String,
       default: null,
@@ -78,10 +81,14 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-/* ================= INDEX OPTIMIZATION ================= */
+/* ================= 🔥 IMPORTANT FIX ================= */
+/*
+❌ REMOVE manual indexes to avoid duplicate warning
+Mongoose already creates index for `unique: true`
+*/
 
-// Faster lookup for auth
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// ❌ REMOVE THESE (IMPORTANT)
+// userSchema.index({ email: 1 });
+// userSchema.index({ username: 1 });
 
 module.exports = mongoose.model("User", userSchema);
