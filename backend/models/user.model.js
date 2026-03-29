@@ -29,23 +29,32 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-    /* ===== AUTH ===== */
-    refreshToken: String,
+    /* ================= AUTH ================= */
+    refreshToken: {
+      type: String,
+      default: null,
+    },
 
-    /* ===== EMAIL VERIFICATION ===== */
-    verificationToken: String,
+    /* ================= EMAIL / OTP VERIFICATION ================= */
+    verificationToken: {
+      type: String,
+      default: null,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
     },
 
-    /* ===== OTP SYSTEM (✅ FIXED) ===== */
+    /* ================= OTP SYSTEM ================= */
     otp: {
       type: String,
+      default: null,
     },
 
-    otpExpires: {   // ✅ FIXED NAME
+    otpExpires: {
       type: Date,
+      default: null,
     },
 
     otpAttempts: {
@@ -53,11 +62,26 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
 
-    /* ===== PASSWORD RESET ===== */
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    /* ================= PASSWORD RESET ================= */
+    passwordResetToken: {
+      type: String,
+      default: null,
+    },
+
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
+
+/* ================= INDEX OPTIMIZATION ================= */
+
+// Faster lookup for auth
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
 
 module.exports = mongoose.model("User", userSchema);

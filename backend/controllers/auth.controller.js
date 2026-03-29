@@ -43,7 +43,7 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       otp,
-      otpExpiry: Date.now() + 5 * 60 * 1000, // ✅ FIXED NAME
+      otpExpires: Date.now() + 5 * 60 * 1000, // ✅ FIXED
       isVerified: false,
     });
 
@@ -68,7 +68,6 @@ exports.register = async (req, res) => {
   } catch (error) {
     console.error("❌ Register Error:", error);
 
-    // 🔥 HANDLE DUPLICATE ERROR (IMPORTANT)
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -105,14 +104,16 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    if (!user.otp || user.otp !== otp) {
+    /* 🔥 FIX 1: STRING MATCH */
+    if (!user.otp || String(user.otp) !== String(otp)) {
       return res.status(400).json({
         success: false,
         message: "Invalid OTP",
       });
     }
 
-    if (user.otpExpiry < Date.now()) {
+    /* 🔥 FIX 2: EXPIRY */
+    if (user.otpExpires < Date.now()) {
       return res.status(400).json({
         success: false,
         message: "OTP expired",
@@ -122,7 +123,7 @@ exports.verifyOtp = async (req, res) => {
     /* ===== SUCCESS ===== */
     user.isVerified = true;
     user.otp = null;
-    user.otpExpiry = null;
+    user.otpExpires = null;
 
     await user.save();
 
@@ -160,7 +161,7 @@ exports.resendOtp = async (req, res) => {
     console.log("📲 RESENT OTP:", otp);
 
     user.otp = otp;
-    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+    user.otpExpires = Date.now() + 5 * 60 * 1000; // ✅ FIXED
 
     await user.save();
 
