@@ -11,13 +11,22 @@ exports.register = async (req, res) => {
 
     /* ===== Validation ===== */
     if (!username || !email || !password) {
-      return res.status(400).json({ message: "All fields required" });
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
     }
 
     /* ===== Check Existing User ===== */
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      return res.status(400).json({
+        success: false,
+        message: "Username or Email already exists",
+      });
     }
 
     /* ===== Hash Password ===== */
@@ -26,7 +35,7 @@ exports.register = async (req, res) => {
     /* ===== Generate OTP ===== */
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    console.log("📲 OTP (DEV MODE):", otp); // 🔥 IMPORTANT
+    console.log("📲 OTP (DEV MODE):", otp);
 
     /* ===== Create User ===== */
     const user = await User.create({
@@ -34,11 +43,11 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       otp,
-      otpExpires: Date.now() + 5 * 60 * 1000,
+      otpExpiry: Date.now() + 5 * 60 * 1000, // ✅ FIXED NAME
       isVerified: false,
     });
 
-    /* ===== OPTIONAL EMAIL (NON-BLOCKING) ===== */
+    /* ===== Send Email (NON-BLOCKING) ===== */
     try {
       if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         await sendEmail(
@@ -51,14 +60,22 @@ exports.register = async (req, res) => {
       console.error("⚠️ Email failed but continuing:", err.message);
     }
 
-    /* ===== RESPONSE ===== */
     return res.status(201).json({
       success: true,
-      message: "User registered. OTP generated.",
+      message: "User registered. OTP sent.",
     });
 
   } catch (error) {
     console.error("❌ Register Error:", error);
+
+    // 🔥 HANDLE DUPLICATE ERROR (IMPORTANT)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Username or Email already exists",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -74,6 +91,7 @@ exports.verifyOtp = async (req, res) => {
 
     if (!email || !otp) {
       return res.status(400).json({
+        success: false,
         message: "Email and OTP required",
       });
     }
@@ -82,25 +100,29 @@ exports.verifyOtp = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         message: "User not found",
       });
     }
 
-    if (user.otp !== otp) {
+    if (!user.otp || user.otp !== otp) {
       return res.status(400).json({
+        success: false,
         message: "Invalid OTP",
       });
     }
 
-    if (user.otpExpires < Date.now()) {
+    if (user.otpExpiry < Date.now()) {
       return res.status(400).json({
+        success: false,
         message: "OTP expired",
       });
     }
 
+    /* ===== SUCCESS ===== */
     user.isVerified = true;
     user.otp = null;
-    user.otpExpires = null;
+    user.otpExpiry = null;
 
     await user.save();
 
@@ -128,6 +150,7 @@ exports.resendOtp = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         message: "User not found",
       });
     }
@@ -137,11 +160,10 @@ exports.resendOtp = async (req, res) => {
     console.log("📲 RESENT OTP:", otp);
 
     user.otp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000;
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
 
     await user.save();
 
-    /* OPTIONAL EMAIL */
     try {
       if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
         await sendEmail(
@@ -174,16 +196,18 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(400).json({
+        success: false,
         message: "Invalid credentials",
       });
     }
 
     if (!user.isVerified) {
       return res.status(403).json({
+        success: false,
         message: "Please verify OTP first",
       });
     }
@@ -192,6 +216,7 @@ exports.login = async (req, res) => {
 
     if (!isMatch) {
       return res.status(400).json({
+        success: false,
         message: "Invalid credentials",
       });
     }
@@ -221,7 +246,8 @@ exports.login = async (req, res) => {
 
 exports.refreshToken = (req, res) => {
   return res.status(200).json({
-    message: "Refresh token endpoint working",
+    success: true,
+    message: "Refresh token working",
   });
 };
 
@@ -229,6 +255,7 @@ exports.refreshToken = (req, res) => {
 
 exports.logout = (req, res) => {
   return res.status(200).json({
+    success: true,
     message: "Logged out successfully",
   });
 };
