@@ -13,9 +13,8 @@ const VerifyOtp = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
 
-    if (!email || !otp) {
-      return setError("Email and OTP required");
-    }
+    // 🔥 prevent multiple clicks
+    if (loading) return;
 
     setLoading(true);
     setError("");
@@ -23,14 +22,12 @@ const VerifyOtp = () => {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/verify-otp`,
-        {
-          email,
-          otp: String(otp).trim(), // 🔥 CRITICAL FIX
-        }
+        { email, otp }
       );
 
-      /* ✅ SUCCESS */
-      if (res.data.success) {
+      console.log("VERIFY RESPONSE:", res.data);
+
+      if (res.data.message === "OTP verified successfully") {
         alert("✅ Verified! Now login.");
         navigate("/login");
       } else {
@@ -38,14 +35,13 @@ const VerifyOtp = () => {
       }
 
     } catch (err) {
-      console.error("Verify OTP Error:", err);
+      console.error("VERIFY ERROR:", err);
 
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError("Something went wrong. Try again.");
+        setError("Server error");
       }
-
     } finally {
       setLoading(false);
     }
@@ -56,30 +52,35 @@ const VerifyOtp = () => {
       <form onSubmit={handleVerify} className="auth-card">
         <h2>Verify OTP</h2>
 
+        {/* EMAIL */}
         <input
           type="email"
           placeholder="Enter email"
           value={email}
-          onChange={(e) => setEmail(e.target.value.trim())}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
 
+        {/* OTP */}
         <input
           type="text"
           placeholder="Enter OTP"
           value={otp}
-          onChange={(e) =>
-            setOtp(e.target.value.replace(/\D/g, "")) // 🔥 only numbers
-          }
-          maxLength={6}
+          onChange={(e) => setOtp(e.target.value)}
           required
         />
 
+        {/* 🔥 FIXED BUTTON */}
         <button type="submit" disabled={loading}>
           {loading ? "Verifying..." : "Verify OTP"}
         </button>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {/* ERROR */}
+        {error && !loading && (
+          <p style={{ color: "red", marginTop: "10px" }}>
+            {error}
+          </p>
+        )}
       </form>
     </div>
   );
