@@ -5,10 +5,16 @@ import { useNavigate } from "react-router-dom";
 const VerifyOtp = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
   const handleVerify = async (e) => {
     e.preventDefault();
+
+    setLoading(true);
+    setError("");
 
     try {
       const res = await axios.post(
@@ -16,39 +22,56 @@ const VerifyOtp = () => {
         { email, otp }
       );
 
-      alert(res.data.message);
-
-      // ✅ SUCCESS → REDIRECT
-      navigate("/login");
+      /* ✅ SUCCESS */
+      if (res.data.success) {
+        alert("✅ Verified! Now login.");
+        navigate("/login");
+      } else {
+        setError(res.data.message || "OTP verification failed");
+      }
 
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "OTP verification failed");
+
+      /* 🔥 FIX: Proper error handling */
+      if (err.response && err.response.data) {
+        setError(err.response.data.message);
+      } else {
+        setError("Server error");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleVerify}>
-      <h2>Verify OTP</h2>
+    <div className="auth-container">
+      <form onSubmit={handleVerify} className="auth-card">
+        <h2>Verify OTP</h2>
 
-      <input
-        type="email"
-        placeholder="Enter Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+        <input
+          type="email"
+          placeholder="Enter email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
 
-      <input
-        type="text"
-        placeholder="Enter OTP"
-        value={otp}
-        onChange={(e) => setOtp(e.target.value)}
-        required
-      />
+        <input
+          type="text"
+          placeholder="Enter OTP"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+          required
+        />
 
-      <button type="submit">Verify</button>
-    </form>
+        <button type="submit" disabled={loading}>
+          {loading ? "Verifying..." : "Verify OTP"}
+        </button>
+
+        {error && <p style={{ color: "red" }}>{error}</p>}
+      </form>
+    </div>
   );
 };
 
