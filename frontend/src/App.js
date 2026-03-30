@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
@@ -14,21 +14,11 @@ function App() {
   const [showOtp, setShowOtp] = useState(false);
   const [otpInput, setOtpInput] = useState("");
 
-  const [domain, setDomain] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [scanResult, setScanResult] = useState(null);
-  const [terminalLogs, setTerminalLogs] = useState([]);
 
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const intervalRef = useRef(null);
   const isLoggedIn = !!token;
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
 
   /* ================= OTP VERIFY ================= */
 
@@ -42,9 +32,9 @@ function App() {
       });
 
       if (res.data.success) {
-        setError(""); // ✅ clear old error
+        setError("");
 
-        // ✅ AUTO LOGIN AFTER OTP
+        // ✅ AUTO LOGIN
         const loginRes = await axios.post(`${API}/auth/login`, {
           email,
           password,
@@ -75,7 +65,6 @@ function App() {
       setError("");
 
       if (mode === "login") {
-        // ✅ FIXED LOGIN (email instead of username)
         const res = await axios.post(`${API}/auth/login`, {
           email,
           password,
@@ -110,8 +99,6 @@ function App() {
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
-    setScanResult(null);
-    setTerminalLogs([]);
   };
 
   return (
@@ -136,6 +123,7 @@ function App() {
                 <h2>Verify OTP</h2>
 
                 <input
+                  type="email"
                   placeholder="Enter Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -157,7 +145,7 @@ function App() {
               <>
                 <h2>{mode === "login" ? "Login" : "Register"}</h2>
 
-                {/* ✅ FIXED EMAIL INPUT */}
+                {/* ✅ EMAIL INPUT */}
                 <input
                   type="email"
                   placeholder="Email"
@@ -165,6 +153,7 @@ function App() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
 
+                {/* ✅ USERNAME ONLY FOR REGISTER */}
                 {mode === "register" && (
                   <input
                     placeholder="Username"
