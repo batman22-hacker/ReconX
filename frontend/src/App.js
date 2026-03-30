@@ -20,6 +20,10 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const isLoggedIn = !!token;
 
+  // 🔥 DEMO SCAN STATES
+  const [domain, setDomain] = useState("");
+  const [scanResult, setScanResult] = useState(null);
+
   /* ================= OTP VERIFY ================= */
 
   const verifyOtp = async (otp) => {
@@ -34,7 +38,6 @@ function App() {
       if (res.data.success) {
         setError("");
 
-        // ✅ AUTO LOGIN
         const loginRes = await axios.post(`${API}/auth/login`, {
           email,
           password,
@@ -99,7 +102,35 @@ function App() {
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
+    setScanResult(null);
   };
+
+  /* ================= FAKE SCAN ================= */
+
+  const runScan = () => {
+    if (!domain) return setError("Enter domain");
+
+    setError("");
+    setScanResult(null);
+
+    setTimeout(() => {
+      setScanResult({
+        domain,
+        status: "ACTIVE",
+        ip: "104.21.45.12",
+        server: "Cloudflare",
+        ssl: "Valid SSL Certificate",
+        vulnerabilities: [
+          "Open Port: 80",
+          "Missing Security Headers",
+          "Weak CSP Policy",
+        ],
+        risk: "Medium",
+      });
+    }, 1500);
+  };
+
+  /* ================= UI ================= */
 
   return (
     <>
@@ -145,7 +176,6 @@ function App() {
               <>
                 <h2>{mode === "login" ? "Login" : "Register"}</h2>
 
-                {/* ✅ EMAIL INPUT */}
                 <input
                   type="email"
                   placeholder="Email"
@@ -153,7 +183,6 @@ function App() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
 
-                {/* ✅ USERNAME ONLY FOR REGISTER */}
                 {mode === "register" && (
                   <input
                     placeholder="Username"
@@ -194,9 +223,40 @@ function App() {
 
           </div>
         ) : (
-          <h2 style={{ textAlign: "center" }}>
-            ✅ Logged In Successfully
-          </h2>
+          <div className="card">
+            <h2>🚀 ReconX Live Scan</h2>
+
+            <input
+              placeholder="Enter domain (example.com)"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+            />
+
+            <button onClick={runScan}>
+              Start Deep Scan
+            </button>
+
+            {scanResult && (
+              <div className="result-box">
+                <h3>🔍 Scan Report</h3>
+
+                <p><strong>Domain:</strong> {scanResult.domain}</p>
+                <p><strong>Status:</strong> {scanResult.status}</p>
+                <p><strong>IP:</strong> {scanResult.ip}</p>
+                <p><strong>Server:</strong> {scanResult.server}</p>
+                <p><strong>SSL:</strong> {scanResult.ssl}</p>
+
+                <h4>⚠️ Vulnerabilities:</h4>
+                <ul>
+                  {scanResult.vulnerabilities.map((v, i) => (
+                    <li key={i}>{v}</li>
+                  ))}
+                </ul>
+
+                <p><strong>Risk Level:</strong> {scanResult.risk}</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </>
