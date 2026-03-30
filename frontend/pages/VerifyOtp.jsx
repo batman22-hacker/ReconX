@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 const VerifyOtp = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState(""); // 🔥 needed for auto login
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -13,13 +14,13 @@ const VerifyOtp = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
 
-    // 🔥 prevent multiple clicks
     if (loading) return;
 
     setLoading(true);
     setError("");
 
     try {
+      // ✅ STEP 1: VERIFY OTP
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/verify-otp`,
         { email, otp }
@@ -27,9 +28,27 @@ const VerifyOtp = () => {
 
       console.log("VERIFY RESPONSE:", res.data);
 
-      if (res.data.message === "OTP verified successfully") {
-        alert("✅ Verified! Now login.");
-        navigate("/login");
+      if (res.data.success || res.data.message === "OTP verified successfully") {
+
+        // ✅ STEP 2: AUTO LOGIN
+        const loginRes = await axios.post(
+          `${import.meta.env.VITE_API_URL}/auth/login`,
+          {
+            email,
+            password,
+          }
+        );
+
+        const token = loginRes.data.token || loginRes.data.accessToken;
+
+        if (!token) throw new Error("Token not received");
+
+        // ✅ SAVE TOKEN
+        localStorage.setItem("token", token);
+
+        // ✅ REDIRECT TO DASHBOARD
+        navigate("/dashboard"); // change if your route different
+
       } else {
         setError(res.data.message || "OTP verification failed");
       }
@@ -37,11 +56,11 @@ const VerifyOtp = () => {
     } catch (err) {
       console.error("VERIFY ERROR:", err);
 
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Server error");
-      }
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Server error"
+      );
     } finally {
       setLoading(false);
     }
@@ -61,6 +80,15 @@ const VerifyOtp = () => {
           required
         />
 
+        {/* PASSWORD (needed for auto login) */}
+        <input
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
         {/* OTP */}
         <input
           type="text"
@@ -70,12 +98,10 @@ const VerifyOtp = () => {
           required
         />
 
-        {/* 🔥 FIXED BUTTON */}
         <button type="submit" disabled={loading}>
           {loading ? "Verifying..." : "Verify OTP"}
         </button>
 
-        {/* ERROR */}
         {error && !loading && (
           <p style={{ color: "red", marginTop: "10px" }}>
             {error}
