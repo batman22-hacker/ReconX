@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import "./App.css";
 
-// ✅ API FIXED (unchanged)
 const API = "https://reconx-ll7b.onrender.com/api";
 
 function App() {
@@ -13,12 +12,9 @@ function App() {
   const [password, setPassword] = useState("");
 
   const [showOtp, setShowOtp] = useState(false);
-
-  // ✅ OTP FIX STATE
   const [otpInput, setOtpInput] = useState("");
 
   const [domain, setDomain] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [scanResult, setScanResult] = useState(null);
@@ -34,40 +30,6 @@ function App() {
     };
   }, []);
 
-  /* ================= TERMINAL ================= */
-
-  const simulateScan = (type) => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    const steps =
-      type === "email"
-        ? [
-            "Booting Email OSINT Engine...",
-            "Checking breach databases...",
-            "Validating MX records...",
-            "Analyzing SPF / DMARC...",
-            "Calculating Risk Profile...",
-            "Email Recon Complete.",
-          ]
-        : [
-            "Booting ReconX Engine...",
-            "Resolving DNS...",
-            "Running WHOIS Intelligence...",
-            "Analyzing Security Headers...",
-            "Calculating Threat Score...",
-            "Recon Complete.",
-          ];
-
-    setTerminalLogs([]);
-    let index = 0;
-
-    intervalRef.current = setInterval(() => {
-      setTerminalLogs((prev) => [...prev, steps[index]]);
-      index++;
-      if (index >= steps.length) clearInterval(intervalRef.current);
-    }, 500);
-  };
-
   /* ================= OTP VERIFY ================= */
 
   const verifyOtp = async (otp) => {
@@ -80,39 +42,49 @@ function App() {
       });
 
       if (res.data.success) {
-        alert("✅ Verified! Now login.");
+        setError(""); // ✅ clear old error
+
+        // ✅ AUTO LOGIN AFTER OTP
+        const loginRes = await axios.post(`${API}/auth/login`, {
+          email,
+          password,
+        });
+
+        const token = loginRes.data.accessToken || loginRes.data.token;
+
+        localStorage.setItem("token", token);
+        setToken(token);
+
         setShowOtp(false);
-        setMode("login");
         setOtpInput("");
       } else {
         setError(res.data.message);
       }
     } catch (err) {
-      setError("OTP verification failed");
+      setError(err.response?.data?.message || "OTP verification failed");
     }
   };
 
   /* ================= AUTH ================= */
 
   const handleAuth = async () => {
-    if (!username || !password) return setError("Enter credentials");
+    if (!email || !password) return setError("Enter credentials");
 
     try {
       setLoading(true);
       setError("");
 
       if (mode === "login") {
+        // ✅ FIXED LOGIN (email instead of username)
         const res = await axios.post(`${API}/auth/login`, {
-          username,
+          email,
           password,
         });
 
-        const receivedToken = res.data.accessToken || res.data.token;
+        const token = res.data.accessToken || res.data.token;
 
-        if (!receivedToken) throw new Error("Token not received");
-
-        localStorage.setItem("token", receivedToken);
-        setToken(receivedToken);
+        localStorage.setItem("token", token);
+        setToken(token);
       } else {
         await axios.post(`${API}/auth/register`, {
           username,
@@ -142,33 +114,6 @@ function App() {
     setTerminalLogs([]);
   };
 
-  /* ================= SCANS ================= */
-
-  const runDomainScan = async () => {
-    if (!domain) return setError("Enter domain");
-    if (!token) return setError("Login required");
-
-    try {
-      setLoading(true);
-      setError("");
-      simulateScan("domain");
-
-      const res = await axios.post(
-        `${API}/scan/full-scan`,
-        { domain },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setScanResult(res.data);
-    } catch (err) {
-      setError("Domain scan failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ================= UI ================= */
-
   return (
     <>
       <div className="navbar">
@@ -196,14 +141,12 @@ function App() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
 
-                {/* ✅ FIXED INPUT */}
                 <input
                   placeholder="Enter OTP"
                   value={otpInput}
                   onChange={(e) => setOtpInput(e.target.value)}
                 />
 
-                {/* ✅ FIXED BUTTON */}
                 <button onClick={() => verifyOtp(otpInput)}>
                   Verify OTP
                 </button>
@@ -214,18 +157,19 @@ function App() {
               <>
                 <h2>{mode === "login" ? "Login" : "Register"}</h2>
 
+                {/* ✅ FIXED EMAIL INPUT */}
                 <input
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
 
                 {mode === "register" && (
                   <input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                   />
                 )}
 
@@ -261,37 +205,9 @@ function App() {
 
           </div>
         ) : (
-          <>
-            <div className="card">
-              <div className="scan-row">
-                <input
-                  placeholder="Enter domain..."
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                />
-                <button onClick={runDomainScan} disabled={loading}>
-                  FULL RECON
-                </button>
-              </div>
-
-              {error && <p className="error">{error}</p>}
-            </div>
-
-            {terminalLogs.length > 0 && (
-              <div className="result-box">
-                {terminalLogs.map((log, i) => (
-                  <p key={i}>&gt; {log}</p>
-                ))}
-              </div>
-            )}
-
-            {scanResult && (
-              <div className="result-box">
-                <h3>Recon Intelligence Report</h3>
-                <p><strong>Target:</strong> {scanResult.target}</p>
-              </div>
-            )}
-          </>
+          <h2 style={{ textAlign: "center" }}>
+            ✅ Logged In Successfully
+          </h2>
         )}
       </div>
     </>
